@@ -127,3 +127,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# post-fork modifications
+HandGestureDataset_SHREC2017/
+HandGestureDataset_SHREC2017_Stripped/
+
+# post-fork outputs
+generator_model/
+gestures/
+main/
+model/
+preprocess_output/
+
+# why does the world hate vim?
+*.swp

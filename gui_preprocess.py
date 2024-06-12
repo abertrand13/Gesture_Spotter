@@ -312,7 +312,7 @@ def post_process(selected_joints,new_gesture,pos,quat, norm_to_wrist, relative):
     return new_gesture
 
 def gui_preprocess(proprocess_folder,output_folder, relative,norm_to_wrist,pos,quat,selected_joints):
-    data_path = proprocess_folder+'/*.csv'
+    data_path = proprocess_folder+'/*.txt'
 
     text_write = 'processed folder is {}\n output folder is {}\n relative is: {}\n norm to wrist is: {}\n post is: {}\n quat is: {}\n selected joints are: {}\n'.format(proprocess_folder,output_folder, relative,norm_to_wrist,pos,quat,selected_joints)
 
@@ -320,7 +320,8 @@ def gui_preprocess(proprocess_folder,output_folder, relative,norm_to_wrist,pos,q
         f.write(text_write)
 
     for i, fname in enumerate(sorted(glob.glob(data_path))):
-        new_gesture = genfromtxt(fname, delimiter=',')
+        new_gesture = genfromtxt(fname, delimiter=' ')
+        print(new_gesture)
         new_gesture = post_process(selected_joints,new_gesture,pos,quat,norm_to_wrist, relative)
 
         file_name = fname.split('_')[-1]

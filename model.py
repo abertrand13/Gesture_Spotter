@@ -353,6 +353,7 @@ def resNet_LSTM(input_shape1,
     """
 
     input_shape = (input_shape1, input_shape2)
+    print(input_shape) 
 
     input_layer = tf.keras.Input(shape=input_shape)
 

@@ -1,0 +1,8 @@
+Date: 2024-06-18 01:34:25.221572
+Window Size: 30
+Total train samples: 58268
+Total test samples: 25400
+Notes: Parsed dataset for every subwindow of each sample - didn't include any at the end which were less than the window size and would need to be padded
+
+Train accuracy: .99
+Test accuracy: .83

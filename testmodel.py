@@ -1,5 +1,8 @@
 import tensorflow as tf
+import keras
 import numpy as np
+import sys
+import os
 
 class residualModule(tf.keras.layers.Layer):
     def __init__(self, n_filters):
@@ -71,6 +74,9 @@ def resNet_LSTM(input_shape1,
     layer_out = tf.keras.layers.BatchNormalization()(layer_out)
     layer_out = tf.keras.layers.Lambda(
         lambda x: tf.keras.backend.squeeze(x, -1), name='squeeze_dim')(layer_out)
+    # shape = keras.ops.shape(x)
+    # print(shape)
+    # layer_out = tf.keras.layers.Reshape([shape[1], shape[2]*shape[3]])(x)
 
     x = tf.keras.layers.Dense(512, activation='relu')(layer_out)
 
@@ -81,10 +87,10 @@ def resNet_LSTM(input_shape1,
 
     if rnn == 'LSTM':
         layer_out = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(
-            400, return_sequences=True, dropout=dropout))(x)
+            128, return_sequences=True, dropout=dropout))(x)
         if multi_rnn:
             layer_out = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(
-                400, return_sequences=True, dropout=dropout))(layer_out)
+                128, return_sequences=True, dropout=dropout))(layer_out)
 
     # GRU Layer
     if rnn == 'GRU':
@@ -102,39 +108,58 @@ def resNet_LSTM(input_shape1,
 
     # Classification Layer
     outputs = tf.keras.layers.Flatten()(layer_out)
-    outputs = tf.keras.layers.Dense(512, activation='relu')(outputs)
+    # outputs = tf.keras.layers.Dense(512, activation='relu')(outputs)
     outputs = tf.keras.layers.Dense(output_shape, activation='softmax')(outputs)
 
     model = tf.keras.Model(inputs=[input_layer], outputs=[outputs])
     return model
 
 input_shape1 = 66 # (22 joints * [x,y,z] for each joint)
-input_shape2 = 20 # time window
+input_shape2 = 30 # time window
 output_shape = 15 # the number of different gestures we want to detect
 learning_rate = .0001
 epochs = 100
 # rnn = 'LSTM'
-# multi_rnn = True
+multiRNN = False
 # attention = True
 # dropout = 0.2
 
 
-model = resNet_LSTM(input_shape2, input_shape1, output_shape)
+model = resNet_LSTM(input_shape1, input_shape2, output_shape, multi_rnn=multiRNN)
 model.compile(loss='sparse_categorical_crossentropy',
 				optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
 				metrics=["sparse_categorical_crossentropy", "accuracy"])
 
 model.summary()
 
-# load data
-train_data = np.load("train_data.npy")
-train_labels = np.load("train_labels.npy")
+datasetFolder = sys.argv[1] if (len(sys.argv) > 1) else  "." # default to current directory
 
-test_data = np.load("test_data.npy")
-test_labels = np.load("test_labels.npy")
+# load data
+# train_data = np.load("train_data.npy")
+# train_labels = np.load("train_labels.npy")
+train_data = np.load(os.path.join(datasetFolder, "train_data.npy"))
+train_labels = np.load(os.path.join(datasetFolder, "train_labels.npy"))
+
+# test_data = np.load("test_data.npy")
+# test_labels = np.load("test_labels.npy")
+test_data = np.load(os.path.join(datasetFolder, "test_data.npy"))
+test_labels = np.load(os.path.join(datasetFolder, "test_labels.npy"))
 
 # print(train_data)
 print(train_data.shape)
 # print(train_labels)
 
-model.fit(train_data, train_labels, epochs=epochs, validation_data=(test_data, test_labels))
+# things for saving
+checkpoint_path = sys.argv[1] + "/cp-{epoch:04d}.weights.h5"
+checkpoint_dir = os.path.dirname(checkpoint_path)
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path, 
+													save_weights_only=True,
+													verbose=1)
+
+# training the model
+# model.fit(train_data, train_labels, epochs=epochs, validation_data=(test_data, test_labels), callbacks=[cp_callback])
+
+model.load_weights("DatasetParse_v4/cp-0097.weights.h5")
+model.evaluate(test_data, test_labels, verbose=2)
+
+model.export("DatasetParse_v4/saved_model") # SavedModel format for TF Serving compat

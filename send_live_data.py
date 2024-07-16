@@ -127,9 +127,11 @@ def identify_gestures(filename, windowFrameCount=20):
 					predicted_label = send_http_request(data)
 					gesture_identifications[predicted_label] += 1
 
-		true_label = row[0]	
+		true_label = row[0]	- 1
 		fully_predicted_label = np.argmax(gesture_identifications)
-		# print("Gesture: predicted {}, actually {}".format(fully_predicted_label, true_label))
+		if(fully_predicted_label != true_label):
+			# should probably get a confusion matrix going here, or something
+			print("Gesture: predicted {}, actually {}".format(fully_predicted_label, true_label))
 
 		# well this feels wrong:
 		global gestures_correct

@@ -42,12 +42,12 @@ def parseGestures(filename,
 		gestureData = np.genfromtxt(os.path.join(rootdir, path))
 
 		# short circuit, just for now
-		gestureDataWindowed = setSequenceLength(gestureData, windowFrameCount)
-		dataShape = np.shape(gestureDataWindowed)
-		gestureDataWindowedReshaped = np.reshape(gestureDataWindowed, (dataShape[1], dataShape[0]))
-		data.append(gestureDataWindowedReshaped)
-		labels.append(row[0])
-		continue
+		# gestureDataWindowed = setSequenceLength(gestureData, windowFrameCount)
+		# dataShape = np.shape(gestureDataWindowed)
+		# gestureDataWindowedReshaped = np.reshape(gestureDataWindowed, (dataShape[1], dataShape[0]))
+		# data.append(gestureDataWindowedReshaped)
+		# labels.append(row[0])
+		# continue
 		
 
 		# parse file
@@ -74,7 +74,7 @@ def parseGestures(filename,
 					data.append(shapedGestureData)
 
 					# push label	
-					labels.append(row[0])
+					labels.append(row[0]-1) # dataset is 1-indexed for training labels
 
 			
 
@@ -86,8 +86,8 @@ def parseGestures(filename,
 
 # PARAMS
 # ------
-datasetOutFolder = "DatasetParse_v8/"
-windowLength = 100
+datasetOutFolder = "DatasetParse_v9/"
+windowLength = 30
 
 if not os.path.isdir(datasetOutFolder):
 	os.mkdir(datasetOutFolder)
@@ -101,7 +101,7 @@ totalTestSamples = parseGestures("test_gestures.txt",
 				windowFrameCount=windowLength,
 				outputFolder=datasetOutFolder)
 
-notes = "Set very large window length and then padded/trimmed every sample to fit. Also reshaped."
+notes = "This should be the same as dataset 4 except without the extra label bucket. So there are 14 gestures and 14 possible labels, as opposed to 15 (which is what there was before)"
 f = open(datasetOutFolder + "notes.txt", 'w')
 f.write("Date: " + str(datetime.datetime.now()) + "\n")
 f.write("Window Size: " + str(windowLength) + "\n")

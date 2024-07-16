@@ -12,8 +12,7 @@ class residualModule(tf.keras.layers.Layer):
                 self.n_filters, (1, 1), padding='same',
                 activation='relu',
                 kernel_initializer='he_normal')
-        self.conv1 = tf.keras.layers.Conv2D(
-            self.n_filters, (3, 3), padding='same',
+        self.conv1 = tf.keras.layers.Conv2D( self.n_filters, (3, 3), padding='same',
             activation='relu',
             kernel_initializer='he_normal')
         self.conv2 = tf.keras.layers.Conv2D(
@@ -116,7 +115,7 @@ def resNet_LSTM(input_shape1,
 
 input_shape1 = 66 # (22 joints * [x,y,z] for each joint)
 input_shape2 = 30 # time window
-output_shape = 15 # the number of different gestures we want to detect
+output_shape = 14 # the number of different gestures we want to detect
 learning_rate = .0001
 epochs = 100
 # rnn = 'LSTM'
@@ -159,7 +158,10 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
 # training the model
 # model.fit(train_data, train_labels, epochs=epochs, validation_data=(test_data, test_labels), callbacks=[cp_callback])
 
-model.load_weights("DatasetParse_v4/cp-0097.weights.h5")
-model.evaluate(test_data, test_labels, verbose=2)
-
-model.export("DatasetParse_v4/saved_model") # SavedModel format for TF Serving compat
+# Load and Save model
+# for i in range(1,100):
+# 	model.load_weights("DatasetParse_v9/cp-00{:02}.weights.h5".format(i))
+# 	print("Evaluating checkpoint {}".format(i))
+# 	model.evaluate(test_data, test_labels, verbose=2)
+model.load_weights("DatasetParse_v9/cp-0095.weights.h5")
+model.export("DatasetParse_v9/saved_model/1") # SavedModel format for TF Serving compat

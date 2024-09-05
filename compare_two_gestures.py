@@ -3,37 +3,59 @@ import os
 import random
 from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
+import json
 
-rootdir = "/Users/alexbertrand/Library/CloudStorage/GoogleDrive-alex.bertrand13@gmail.com/My Drive/Skywhale Labs/datasets/HandGestureDataset_SHREC2017_Stripped"
-# path = "gesture_1/finger_1/subject_1/essai_1/skeletons_world.txt"
-path = "gesture_2/finger_1/subject_1/essai_1/skeletons_world.txt/skeletons_world.txt"
-# /Users/alexbertrand/Library/CloudStorage/GoogleDrive-alex.bertrand13@gmail.com/My Drive/Skywhale Labs/datasets/HandGestureDataset_SHREC2017_Stripped/gesture_1/finger_1/subject_1/essai_1/skeletons_world.txt
+# Mac
+# rootdir = "/Users/alexbertrand/Library/CloudStorage/GoogleDrive-alex.bertrand13@gmail.com/My Drive/Skywhale Labs/datasets/HandGestureDataset_SHREC2017_Stripped"
+# path = "gesture_2/finger_1/subject_2/essai_1/skeletons_world.txt/skeletons_world.txt"
+# path2 = "gesture_2/finger_1/subject_1/essai_1/skeletons_world.txt/skeletons_world.txt"
 
-skeleton_positions = np.genfromtxt(os.path.join(rootdir, path))
+# Windows
+rootdir = "HandGestureDataset_SHREC2017"
+path = "gesture_5/finger_1/subject_1/essai_1/skeletons_world.txt"
+# path2 = "gesture_2/finger_1/subject_2/essai_1/skeletons_world.txt"
+path2 = "test_gesture07.json"
+
+skeleton1_positions = np.genfromtxt(os.path.join(rootdir, path))
+skeleton2_positions = np.genfromtxt(os.path.join(rootdir, path2), delimiter=',')
+# f = open(os.path.join(rootdir, path2))
+# skeleton2_positions = json.load(f)
+print(skeleton2_positions)
 
 idx = 0
-points = None
+hand1_points = None
+hand2_points = None
 lines = []
 
 # with open(os.path.join(rootdir, path) as f:
 
 def animate(i, x=[], y=[]):
-	global idx, points, lines
+	global idx, hand1_points, hand2_points, lines
 
 	# Erase previous frame
-	if points != None:
-		points.remove()
+	if hand1_points != None:
+		hand1_points.remove()
+	if hand2_points != None:
+		hand2_points.remove()
 	for line in lines:
 		for elem in line:
 			elem.remove()
 	lines = []
+
+	ax = fig.get_axes()[0]
+
+	hand1_points = draw_hand(skeleton1_positions, idx, ax)
+	hand2_points = draw_hand(skeleton2_positions, idx, ax)
 	
+	idx = (idx + 1) % min(len(skeleton1_positions), len(skeleton2_positions))
+	
+def draw_hand(skeleton_positions, idx, ax):
 	data = skeleton_positions[idx]
 	x = data[::3]
 	y = data[1::3]
 	z = data[2::3]
 	
-	ax = fig.get_axes()[0]	
+	# ax = fig.get_axes()[0]
 	points = ax.scatter(x,y,z,c='b')
 	lines.append(ax.plot([x[0], x[1]], [y[0], y[1]], [z[0], z[1]], c='b'))
 	lines.append(ax.plot([x[0], x[2]], [y[0], y[2]], [z[0], z[2]], c='b'))
@@ -57,12 +79,13 @@ def animate(i, x=[], y=[]):
 	lines.append(ax.plot([x[19], x[20]], [y[19], y[20]], [z[19], z[20]], c='b'))
 	lines.append(ax.plot([x[20], x[21]], [y[20], y[21]], [z[20], z[21]], c='b'))
 	# points = plt.scatter(x,y,z, c='b')
-	idx = (idx + 1) % len(skeleton_positions)
+
+	return points
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.set_xlim([.30, .55])
 ax.set_ylim([-.42, -.20])
 ax.set_zlim([.25, .7])
-ani = FuncAnimation(fig, animate, interval = 100)
+ani = FuncAnimation(fig, animate, interval = 50)
 plt.show()

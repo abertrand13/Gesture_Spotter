@@ -7,45 +7,22 @@ import matplotlib.pyplot as plt
 import os
 from tqdm import tqdm
 
-run_loop = True
-
-def call_at_interval(period, callback, args):
-    while(run_loop):
-        sleep(period)
-        callback(*args)
-
-def set_interval(period, callback, *args):
-    Thread(target=call_at_interval, args=(period, callback, args)).start()
-
-def print_a_thing(str_to_print):
-    print(str_to_print)
-
-# def do_the_thing():
-# 	num_subjects = 
-# 	rootdir = "OnlineDHG/ODHG2016/"
-# 	for root, dirs, files in os.walk(rootdir):
-# 		for filename in files:
-# 			if filename == "skeletons_world.txt":
-# 				print(str(os.path.join(root, filename)))
-		
-
-# set_interval(1, print_a_thing, "hey its a thread!")
-# do_the_thing()
-
-
+# SERVER LOCATION DEFINITION
 port = 9001
 model_name = "my-test-model"
 headers = {"content-type": "application/json"}
 
+# GLOBAL ACCURACY TRACKING VARS
 data_tracked = []
 gestures_correct = 0
 gestures_incorrect = 0
 
+# Send one block (eg 30 frames) of gesture data to server for classification
 def send_http_request(gesture_data):
 	data_shape = np.shape(gesture_data)
 	data_reshaped = np.reshape(gesture_data, (1, data_shape[0], data_shape[1]))
 	data = json.dumps({"signature_name":"serving_default", "instances":data_reshaped.tolist()})
-	print(data)
+	# print(data)
 	
 	endpoint = "http://localhost:" + str(port) + "/v1/models/" + model_name + ":predict"
 	json_response = requests.post(endpoint, data=data, headers=headers)
@@ -55,10 +32,12 @@ def send_http_request(gesture_data):
 	return (predicted_label, predictions[0][predicted_label]) # [0]??
 
 
-def feed_live_gesture_stream(rootdir, subject, sequence, window_size):
-	skeleton_path = "subject_{}/sequence_{}/skeletons_world_enhanced.txt"
+# Feed an entire gesture (n frames) through to server
+def feed_live_gesture_stream(filepath, window_size):
+	# skeleton_path = "subject_{}/sequence_{}/skeletons_world_enhanced.txt"
 
-	stream_file_data = np.genfromtxt(os.path.join(rootdir, skeleton_path.format(subject, sequence)))
+	# stream_file_data = np.genfromtxt(filepath)
+	stream_file_data = np.genfromtxt(filepath, delimiter=',')
 	num_frames = len(stream_file_data)
 
 	current_predicted_gesture = -1
@@ -244,7 +223,8 @@ def parse_subject_sequence_info(rootdir, subject, sequence):
 
 num_subjects = 29
 num_sequences = 16
-rootdir = "OnlineDHG/ODHG2016"
+# rootdir = "OnlineDHG/ODHG2016"
+rootdir = "HandGestureDataset_SHREC2017/UnityTestGestures/"
 
 total_sequences = 0
 total_correct_gestures = 0
@@ -262,27 +242,35 @@ total_missed_errors = 0
 	# 		num_misidentified_errors,
 	# 		num_missed_errors)
 
-for i in range(1,num_subjects):
-	for j in range(1, num_sequences):
-		if not os.path.exists(os.path.join(rootdir, "subject_{}/sequence_{}".format(i,j))):
-			continue
-		skeleton_path = "subject_{}/sequence_{}/skeletons_world_enhanced.txt"
-		ground_truth = parse_subject_sequence_info(rootdir, i, j-1)
-		print("Feeding through subject {}, sequence {}".format(i, j))
-		inference = feed_live_gesture_stream(rootdir, i, j, 30)
-		
-		results = evaluate_identification_metrics(inference, ground_truth)
+# TODO: Redo this to be more general purpose for file structure parsing. Or something.
+# for i in range(1,num_subjects):
+# 	for j in range(1, num_sequences):
+# 		if not os.path.exists(os.path.join(rootdir, "subject_{}/sequence_{}".format(i,j))):
+# 			continue
+# 		skeleton_path = "subject_{}/sequence_{}/skeletons_world_enhanced.txt"
+# 		ground_truth = parse_subject_sequence_info(rootdir, i, j-1)
+# 		print("Feeding through subject {}, sequence {}".format(i, j))
+# 		filepath = os.path.join(rootdir, skeleton_path.format(i, j))
+# 		inference = feed_live_gesture_stream(filepath, 30)
+# 		
+# 		results = evaluate_identification_metrics(inference, ground_truth)
+# 
+# 		total_sequences += 1
+# 		total_correct_gestures += results[0]
+# 		total_gestures += results[1]
+# 		total_average_inference_time = \
+# 			(total_average_inference_time * ((total_gestures - results[1]) / total_gestures)) + \
+# 			(results[2] * (results[1] / total_gestures))
+# 		total_repeat_errors += results[3]
+# 		total_null_errors += results[4]
+# 		total_misidentified_errors += results[5]
+# 		total_missed_errors += results[6]
 
-		total_sequences += 1
-		total_correct_gestures += results[0]
-		total_gestures += results[1]
-		total_average_inference_time = \
-			(total_average_inference_time * ((total_gestures - results[1]) / total_gestures)) + \
-			(results[2] * (results[1] / total_gestures))
-		total_repeat_errors += results[3]
-		total_null_errors += results[4]
-		total_misidentified_errors += results[5]
-		total_missed_errors += results[6]
+for gesture_file in os.listdir(rootdir):
+	print(gesture_file)
+	filepath = os.path.join(rootdir, gesture_file)
+	inference = feed_live_gesture_stream(filepath, 30)
+	print(inference)
 
 
 print("TOTALS")

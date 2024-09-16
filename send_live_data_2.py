@@ -267,6 +267,8 @@ total_missed_errors = 0
 # 		total_missed_errors += results[6]
 
 for gesture_file in os.listdir(rootdir):
+	if not gesture_file.endswith('.json'):
+		continue
 	print(gesture_file)
 	filepath = os.path.join(rootdir, gesture_file)
 	inference = feed_live_gesture_stream(filepath, 30)

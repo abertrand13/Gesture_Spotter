@@ -3,109 +3,160 @@ import numpy as np
 import shutil
 import datetime
 from tqdm import tqdm
+import re
 
 # for path, dirs, files in os.walk(rootdir):
-# 	for filename in files:
-# 		print(os.path.join(path, filename))
+#   for filename in files:
+#       print(os.path.join(path, filename))
 
 
 def setSequenceLength(seq, desiredSeqLength):
-	if len(seq) < desiredSeqLength:
-		padded = np.pad(seq, ((0, desiredSeqLength-len(seq)), (0,0)))
-		return padded
-	else:
-		return seq[:desiredSeqLength]
+    if len(seq) < desiredSeqLength:
+        padded = np.pad(seq, ((0, desiredSeqLength-len(seq)), (0,0)))
+        return padded
+    else:
+        return seq[:desiredSeqLength]
 
-def parseGestures(filename,
-				datasetType="train",
-				windowFrameCount=20,
-				outputFolder="DatasetParse/"):
-	data = []
-	labels = []
-	
-	rootdir = "HandGestureDataset_SHREC2017"
-	gestureFile = np.genfromtxt(os.path.join(rootdir, filename), dtype=np.intc, delimiter=' ')
+def parseSingleGestureData(path, delimiter, data, labels, label, windowLength):
+    gestureData = np.genfromtxt(path, delimiter=delimiter)
 
-	print("Parsing " + datasetType + " data")
+    # short circuit, just for now
+    # gestureDataWindowed = setSequenceLength(gestureData, windowLength)
+    # dataShape = np.shape(gestureDataWindowed)
+    # gestureDataWindowedReshaped = np.reshape(gestureDataWindowed, (dataShape[1], dataShape[0]))
+    # data.append(gestureDataWindowedReshaped)
+    # labels.append(row[0])
+    # continue
+    
+    # parse file
+    numRows = len(gestureData)
+    if numRows >= windowLength:
+        # use only first `windowSize` samples
+        # currentGestureData = gestureData[:windowLength]
+        # dataShape = np.shape(currentGestureData)
+        # shapedGestureData = np.reshape(currentGestureData, (dataShape[1], dataShape[0]))
+        # data.append(shapedGestureData)
+        # labels.append(row[0])
 
-	for _, row in tqdm(enumerate(gestureFile), total=len(gestureFile)):
-		# construct file path from reference
-		path = ("gesture_" + str(row[0]) + "/"
-				"finger_" + str(row[1]) + "/"
-				"subject_" + str(row[2]) + "/"
-				"essai_" + str(row[3]) + "/"
-				"skeletons_world.txt")
-		# print(path)
+        # use as many full `windowSize` samples as you can get from full sample
+        for i, dataRow in enumerate(gestureData):
+            if i + windowLength < numRows:
+                # Don't Reshape, or...
+                # obj = gestureData[i:i+windowLength]
+                # push data
 
-		# shutil.copy(os.path.join(rootdir, path), "./gestures/gesture_" + str(row[0]) + "_" + str(i) + ".txt")
+                # Do Reshape
+                currentGestureData = gestureData[i:i+windowLength]
+                dataShape = np.shape(currentGestureData)
+                shapedGestureData = np.reshape(currentGestureData, (dataShape[1], dataShape[0]))
+                data.append(shapedGestureData)
 
-		gestureData = np.genfromtxt(os.path.join(rootdir, path))
+                # push label    
+                labels.append(label)
 
-		# short circuit, just for now
-		# gestureDataWindowed = setSequenceLength(gestureData, windowFrameCount)
-		# dataShape = np.shape(gestureDataWindowed)
-		# gestureDataWindowedReshaped = np.reshape(gestureDataWindowed, (dataShape[1], dataShape[0]))
-		# data.append(gestureDataWindowedReshaped)
-		# labels.append(row[0])
-		# continue
-		
+                    
+def parseTestAugmentedGestures(windowLength=20):
+    data = []
+    labels = []
 
-		# parse file
-		numRows = len(gestureData)
-		if numRows >= windowFrameCount:
-			# use only first `windowSize` samples
-			# currentGestureData = gestureData[:windowFrameCount]
-			# dataShape = np.shape(currentGestureData)
-			# shapedGestureData = np.reshape(currentGestureData, (dataShape[1], dataShape[0]))
-			# data.append(shapedGestureData)
-			# labels.append(row[0])
+    rootdir = "UnityTestGestures"
+    files = [f for f in os.listdir(rootdir) if os.path.isfile(os.path.join(rootdir,f))]
+    for file in tqdm(files):
+        potentialLabels = re.findall(r'test_gesture(\d+)', file)
+        if len(potentialLabels) == 0:
+            continue
+        label = potentialLabels[0]
+        parseSingleGestureData(os.path.join(rootdir, file), ',', data, labels, label, windowLength)
 
-			# use as many full `windowSize` samples as you can get from full sample
-			for i, dataRow in enumerate(gestureData):
-				if i + windowFrameCount < numRows:
-					# Don't Reshape, or...
-					# obj = gestureData[i:i+windowFrameCount]
-					# push data
+    return data, labels
+        
 
-					# Do Reshape
-					currentGestureData = gestureData[i:i+windowFrameCount]
-					dataShape = np.shape(currentGestureData)
-					shapedGestureData = np.reshape(currentGestureData, (dataShape[1], dataShape[0]))
-					data.append(shapedGestureData)
+def parseSHRECGestures(filename,
+                datasetType="train",
+                windowLength=20):
+    data = []
+    labels = []
+    
+    rootdir = "HandGestureDataset_SHREC2017"
+    gestureFile = np.genfromtxt(os.path.join(rootdir, filename), dtype=np.intc, delimiter=' ')
 
-					# push label	
-					labels.append(row[0]-1) # dataset is 1-indexed for training labels
+    print("Parsing " + datasetType + " data")
 
-			
+    for _, row in tqdm(enumerate(gestureFile), total=len(gestureFile)):
+        # construct file path from reference
+        path = ("gesture_" + str(row[0]) + "/"
+                "finger_" + str(row[1]) + "/"
+                "subject_" + str(row[2]) + "/"
+                "essai_" + str(row[3]) + "/"
+                "skeletons_world.txt")
+        # print(path)
 
-	print("Resulting data shape: " + str(np.shape(data)))
-	print("Saving to " + outputFolder)
-	np.save(outputFolder + datasetType + "_data", data)
-	np.save(outputFolder + datasetType + "_labels", labels)
-	return len(labels)
+        # shutil.copy(os.path.join(rootdir, path), "./gestures/gesture_" + str(row[0]) + "_" + str(i) + ".txt")
+        parseSingleGestureData(os.path.join(rootdir, path), ' ', data, labels, row[0]-1, windowLength) # dataset is 1-indexed for training labels
+    
+    return data, labels
+
+# so the idea here is we give this a list of functions that will parse individual gesture sets
+# each of those will return a list of data and a list of labels, and this will aggregate them all into the right place
+# and hopefully that's a relatively scalable way to eventually compose multiple datasets or whatever we need
+def parseGestures(windowLength,
+                  outputFolder="DatasetParse/"):
+    traindata = []
+    trainlabels = []
+
+    testdata = []
+    testlabels = []
+    
+    SHRECdata, SHREClabels = parseSHRECGestures("train_gestures.txt",
+                                                datasetType="train",
+                                                windowLength=windowLength)
+
+    for elem in SHRECdata:
+        traindata.append(elem)
+    for elem in SHREClabels:
+        trainlabels.append(elem)
+
+    # augdata, auglabels = parseTestAugmentedGestures(windowLength)
+
+    # for elem in augdata:
+    #     traindata.append(elem)
+    # for elem in auglabels:
+    #     trainlabels.append(elem)
+
+
+    print("Resulting data shape: " + str(np.shape(traindata)))
+    print("Saving to " + outputFolder)
+    # np.save(outputFolder + datasetType + "_data", traindata)
+    # np.save(outputFolder + datasetType + "_labels", trainlabels)
+    np.save(outputFolder + "data", traindata)
+    np.save(outputFolder + "labels", trainlabels)
+
+
 
 # PARAMS
 # ------
-datasetOutFolder = "DatasetParse_v9/"
+datasetOutFolder = "DatasetParse_v10/"
 windowLength = 30
 
 if not os.path.isdir(datasetOutFolder):
-	os.mkdir(datasetOutFolder)
+    os.mkdir(datasetOutFolder)
 
-totalTrainSamples = parseGestures("train_gestures.txt",
-				datasetType="train",
-				windowFrameCount=windowLength,
-				outputFolder=datasetOutFolder)
-totalTestSamples = parseGestures("test_gestures.txt",
-				datasetType="test",
-				windowFrameCount=windowLength,
-				outputFolder=datasetOutFolder)
+parseGestures(windowLength, datasetOutFolder)
+
+# totalTrainSamples = parseGestures("train_gestures.txt",
+#               datasetType="train",
+#               windowLength=windowLength,
+#               outputFolder=datasetOutFolder)
+# totalTestSamples = parseGestures("test_gestures.txt",
+#               datasetType="test",
+#               windowLength=windowLength,
+#               outputFolder=datasetOutFolder)
 
 notes = "This should be the same as dataset 4 except without the extra label bucket. So there are 14 gestures and 14 possible labels, as opposed to 15 (which is what there was before)"
 f = open(datasetOutFolder + "notes.txt", 'w')
 f.write("Date: " + str(datetime.datetime.now()) + "\n")
 f.write("Window Size: " + str(windowLength) + "\n")
-f.write("Total train samples: " + str(totalTrainSamples) + "\n")
-f.write("Total test samples: " + str(totalTestSamples) + "\n")
+# f.write("Total train samples: " + str(totalTrainSamples) + "\n")
+# f.write("Total test samples: " + str(totalTestSamples) + "\n")
 f.write("Notes: " + notes + "\n")
 f.close()

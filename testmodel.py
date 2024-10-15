@@ -136,13 +136,17 @@ datasetFolder = sys.argv[1] if (len(sys.argv) > 1) else  "." # default to curren
 # load data
 # train_data = np.load("train_data.npy")
 # train_labels = np.load("train_labels.npy")
-train_data = np.load(os.path.join(datasetFolder, "train_data.npy"))
-train_labels = np.load(os.path.join(datasetFolder, "train_labels.npy"))
+# train_data = np.load(os.path.join(datasetFolder, "train_data.npy"))
+# train_labels = np.load(os.path.join(datasetFolder, "train_labels.npy"))
+# New pathing for augmented dataset because I haven't done segmentation yet:
+train_data = np.load(os.path.join(datasetFolder, "data.npy"))
+train_labels = np.load(os.path.join(datasetFolder, "labels.npy"))
 
 # test_data = np.load("test_data.npy")
 # test_labels = np.load("test_labels.npy")
-test_data = np.load(os.path.join(datasetFolder, "test_data.npy"))
-test_labels = np.load(os.path.join(datasetFolder, "test_labels.npy"))
+# Temporarily ignore below for augmented dataset because I haven't done pathing yet
+# test_data = np.load(os.path.join(datasetFolder, "test_data.npy"))
+# test_labels = np.load(os.path.join(datasetFolder, "test_labels.npy"))
 
 # print(train_data)
 print(train_data.shape)
@@ -155,13 +159,25 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
 													save_weights_only=True,
 													verbose=1)
 
-# training the model
+# Train the model with a validation set
 # model.fit(train_data, train_labels, epochs=epochs, validation_data=(test_data, test_labels), callbacks=[cp_callback])
 
-# Load and Save model
+# OR
+# Train the model without a validation set
+# (Currently don't have one of those yet for the Unity-derived augmented gestures
+# model.fit(train_data, train_labels, epochs=epochs, callbacks=[cp_callback])
+
+
+# TODO: the below should probably happen every execution with the best checkpoint. Restoring model parameters is gonna be a royal pain in the ass if you ever want to go back and recall a different model, I think
+# Feels like models should be saved in a separate folder from dataset, since they're technically independent variables. Shape has to match, but you could have a different model with the same dataset, or a differet dataset with the same model, etc.
+# Damn ML is hard.
+
+# Load model checkpoints and print accuracy
 # for i in range(1,100):
 # 	model.load_weights("DatasetParse_v9/cp-00{:02}.weights.h5".format(i))
 # 	print("Evaluating checkpoint {}".format(i))
 # 	model.evaluate(test_data, test_labels, verbose=2)
-model.load_weights("DatasetParse_v9/cp-0095.weights.h5")
-model.export("DatasetParse_v9/saved_model/1") # SavedModel format for TF Serving compat
+
+# Save model for tf serving
+model.load_weights("DatasetParse_v11/cp-0002.weights.h5")
+model.export("DatasetParse_v11/saved_model/1") # SavedModel format for TF Serving compat

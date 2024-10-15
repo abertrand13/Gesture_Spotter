@@ -65,8 +65,13 @@ def parseTestAugmentedGestures(windowLength=20):
         potentialLabels = re.findall(r'test_gesture(\d+)', file)
         if len(potentialLabels) == 0:
             continue
-        label = potentialLabels[0]
-        parseSingleGestureData(os.path.join(rootdir, file), ',', data, labels, label, windowLength)
+
+        # I thought I was being clever by converting the delimiters but well, woops
+        # Filter out 'gold' files that use commas
+        if len(re.findall(r'scale', file)) == 0: # Fix to be...better. Not this line just like, the whole thing
+            continue
+        label = int(potentialLabels[0])
+        parseSingleGestureData(os.path.join(rootdir, file), ' ', data, labels, label, windowLength)
 
     return data, labels
         
@@ -107,21 +112,23 @@ def parseGestures(windowLength,
     testdata = []
     testlabels = []
     
-    SHRECdata, SHREClabels = parseSHRECGestures("train_gestures.txt",
-                                                datasetType="train",
-                                                windowLength=windowLength)
+    # SHRECdata, SHREClabels = parseSHRECGestures("train_gestures.txt",
+    #                                             datasetType="train",
+    #                                             windowLength=windowLength)
 
-    for elem in SHRECdata:
-        traindata.append(elem)
-    for elem in SHREClabels:
-        trainlabels.append(elem)
-
-    # augdata, auglabels = parseTestAugmentedGestures(windowLength)
-
-    # for elem in augdata:
+    # for elem in SHRECdata:
     #     traindata.append(elem)
-    # for elem in auglabels:
+    # for elem in SHREClabels:
     #     trainlabels.append(elem)
+
+    augdata, auglabels = parseTestAugmentedGestures(windowLength)
+
+    for elem in augdata:
+        traindata.append(elem)
+    for elem in auglabels:
+        # print("Label Element: ", elem) 
+        # print(elem.dtype)
+        trainlabels.append(elem)
 
 
     print("Resulting data shape: " + str(np.shape(traindata)))
@@ -135,7 +142,7 @@ def parseGestures(windowLength,
 
 # PARAMS
 # ------
-datasetOutFolder = "DatasetParse_v10/"
+datasetOutFolder = "DatasetParse_v11/"
 windowLength = 30
 
 if not os.path.isdir(datasetOutFolder):
@@ -152,7 +159,7 @@ parseGestures(windowLength, datasetOutFolder)
 #               windowLength=windowLength,
 #               outputFolder=datasetOutFolder)
 
-notes = "This should be the same as dataset 4 except without the extra label bucket. So there are 14 gestures and 14 possible labels, as opposed to 15 (which is what there was before)"
+notes = "This is exclusively the augmented gestures, made by taking original gestures from Unity and then scaling/noising/shifting them"
 f = open(datasetOutFolder + "notes.txt", 'w')
 f.write("Date: " + str(datetime.datetime.now()) + "\n")
 f.write("Window Size: " + str(windowLength) + "\n")

@@ -143,3 +143,10 @@ preprocess_output/
 *.swp
 
 .vs/
+.DS_Store
+*.npy
+DatasetParse_v*
+OnlineDHG
+tensorflow-model-server_2.8.0_all.deb
+UnityTestGestures/
+

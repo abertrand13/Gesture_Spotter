@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import sys
+from tqdm import tqdm
 
 def data_aug(skeleton, compoent_num, noise_val, shift_val, scale_val):
     joints = 3
@@ -74,8 +75,9 @@ noise = .1
 
 if(len(sys.argv) < 3):
     print("Usage: python augment.py <filename> <number-of-augmented-files-to-produce>")
+    exit()
 
-for i in range(int(sys.argv[2])):
+for i in tqdm(range(int(sys.argv[2]))):
     filename = sys.argv[1]
     skeleton = np.genfromtxt(filename, delimiter=',')
     new_skeleton = data_aug(skeleton, joints, scale, shift, noise)

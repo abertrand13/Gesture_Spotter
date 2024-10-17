@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import sys
+import os
 from tqdm import tqdm
 
 def data_aug(skeleton, compoent_num, noise_val, shift_val, scale_val):
@@ -73,17 +74,21 @@ scale = .2
 shift = .1
 noise = .1
 
-if(len(sys.argv) < 3):
-    print("Usage: python augment.py <filename> <number-of-augmented-files-to-produce>")
+if(len(sys.argv) < 4):
+    print("Usage: python augment.py <filename> <number-of-augmented-files-to-produce> <output-folder>")
     exit()
 
+input_path = sys.argv[1]
+
 for i in tqdm(range(int(sys.argv[2]))):
-    filename = sys.argv[1]
-    skeleton = np.genfromtxt(filename, delimiter=',')
+    skeleton = np.genfromtxt(input_path, delimiter=',') # check if this modifies in place or not, could be more efficient to only do it once
     new_skeleton = data_aug(skeleton, joints, scale, shift, noise)
-    new_filename = filename.removesuffix(".json") \
+    filename = os.path.basename(input_path)
+    extension = os.path.splitext(filename)[1] # accounts for .gold files
+    new_filename = filename.removesuffix(extension) \
                     + ("_scale{}".format(scale) if scale else "") \
                     + ("_shift{}".format(shift) if shift else "") \
                     + ("_noise{}".format(noise) if noise else "") \
                     + "_" + str(i) + ".json"
-    np.savetxt(new_filename, new_skeleton, delimiter=" ") # match SHREC dataset format
+    new_path = os.path.join(sys.argv[3], new_filename)
+    np.savetxt(new_path, new_skeleton, delimiter=" ") # match SHREC dataset format
